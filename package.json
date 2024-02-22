@@ -5,6 +5,7 @@
   "scripts": {
     "clean": "rm -rf dist && echo 'Done.'",
     "dev": "bun index.ts",
+    "build": "bun build index.ts",
     "start": "bun run index.ts"
   },
   "devDependencies": {
