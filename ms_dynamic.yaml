@@ -1,0 +1,120 @@
+options:
+  default_logs_bucket_behavior: REGIONAL_USER_OWNED_BUCKET
+availableSecrets:
+  secretManager:
+    - versionName: projects/928261812692/secrets/git_token/versions/1
+      env: 'GIT_TOKEN'
+
+steps:
+  - id: 'set_envs'
+    name: 'ubuntu'
+    entrypoint: 'bash'
+    # args: ['bash']
+    env:
+    - 'GIT_URL=$_GIT_URL'
+    - 'DOCKER_REPO_BASE=$_DOCKER_REPO_BASE'
+    - 'IMAGE_NAME=$_IMAGE_NAME'
+    - 'VERSION=$_VERSION'
+    - 'CLUSTER_NAME=$_CLUSTER_NAME'
+    - 'LOCATION=$_LOCATION'
+    - 'OUTPUT_BUCKET=$_OUTPUT_BUCKET'
+    - 'DOCKER_FILE=$_DOCKER_FILE'
+    - 'ATTESTOR_KEY=$_ATTESTOR_KEY'
+    - 'ATTESTOR=$_ATTESTOR'
+    - 'NAMESPACE=$_NAMESPACE'
+    # - 'PROJECT_ID=$PROJECT_ID'
+    # - 'PROJECT_NUMBER=$PROJECT_NUMBER'
+    # - 'REV=$REVISION_ID'
+    # subsubstitutions:
+    #   - 
+
+  - id: 'pull'
+    name: 'gcr.io/cloud-builders/git'
+    args: 
+      - 'clone'
+      - 'https://oauth2:$$GIT_TOKEN@$_GIT_URL'
+    secretEnv: ['GIT_TOKEN']
+
+  - id: 'build'
+    waitFor:
+      - 'pull'
+    name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-f'
+      - '/workspace/$_DOCKER_FILE'
+      - '-t'
+      - '$_DOCKER_REPO_BASE/$_IMAGE_NAME:$_VERSION'
+      - '.'
+  
+  - id: 'publish'
+    waitFor:
+      - 'pull'
+      - 'build'
+    name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - '$_DOCKER_REPO_BASE/$_IMAGE_NAME:$_VERSION'
+
+
+  - id: 'create-attestation'
+    waitFor:
+      - 'pull'
+      - 'build'
+      - 'publish'
+    name: 'gcr.io/pkyc-400916/binauthz-attestation:latest'
+    args:
+      - '--artifact-url'
+      - '$_DOCKER_REPO_BASE/$_IMAGE_NAME:$_VERSION'
+      - '--attestor'
+      - '$_ATTESTOR'
+      - '--keyversion'
+      - '$_ATTESTOR_KEY'
+
+
+  - id: 'Prepare deploy'
+    waitFor:
+      - 'pull'
+      - 'build'
+      - 'publish'
+      - 'create-attestation'
+    name: 'gcr.io/cloud-builders/gke-deploy'
+    args:
+    - 'prepare'
+    - '--image=$_DOCKER_REPO_BASE/$_IMAGE_NAME:$_VERSION'
+    - '--expose=80'
+    - '--app=$_IMAGE_NAME'
+    - '--version=$_VERSION'
+    - '--namespace=$_NAMESPACE'
+    - '--output=$_OUTPUT_BUCKET'
+    - '--annotation=gcb-build-id=$BUILD_ID'
+
+  - id: 'Apply deploy'
+    waitFor:
+      - 'pull'
+      - 'build'
+      - 'publish'
+      - 'create-attestation'
+      - 'Prepare deploy'
+    name: 'gcr.io/cloud-builders/gke-deploy'
+    args:
+    - 'apply'
+    - '--filename=$_OUTPUT_BUCKET/expanded/*'
+    - '--namespace=$_NAMESPACE'
+    - '--cluster=$_CLUSTER_NAME'
+    - '--location=$_LOCATION'
+
+#tags: ['cloud-builders-Amitabh']
+
+
+#  - id: 'validate_push'
+#    waitFor:
+#      - 'pull'
+#      - 'validate_pull'
+#      - 'build'
+#      - 'validate_build'
+#      - 'publish'
+#    name: 'ubuntu'
+#    args:
+#      - 'echo'
+#      - 'Hello World 3'
