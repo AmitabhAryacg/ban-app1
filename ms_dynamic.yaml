@@ -82,7 +82,7 @@ steps:
     args:
     - 'prepare'
     - '--image=$_DOCKER_REPO_BASE/$_IMAGE_NAME:$_VERSION'
-    - '--expose=80'
+    - '--expose=3000'
     - '--app=$_IMAGE_NAME'
     - '--version=$_VERSION'
     - '--namespace=$_NAMESPACE'
