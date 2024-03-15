@@ -72,37 +72,37 @@ steps:
       - '$_ATTESTOR_KEY'
 
 
-  - id: 'Prepare deploy'
-    waitFor:
-      - 'pull'
-      - 'build'
-      - 'publish'
-      - 'create-attestation'
-    name: 'gcr.io/cloud-builders/gke-deploy'
-    args:
-    - 'prepare'
-    - '--image=$_DOCKER_REPO_BASE/$_IMAGE_NAME:$_VERSION'
-    - '--expose=3000'
-    - '--app=$_IMAGE_NAME'
-    - '--version=$_VERSION'
-    - '--namespace=$_NAMESPACE'
-    - '--output=$_OUTPUT_BUCKET'
-    - '--annotation=gcb-build-id=$BUILD_ID'
+  # - id: 'Prepare deploy'
+  #   waitFor:
+  #     - 'pull'
+  #     - 'build'
+  #     - 'publish'
+  #     - 'create-attestation'
+  #   name: 'gcr.io/cloud-builders/gke-deploy'
+  #   args:
+  #   - 'prepare'
+  #   - '--image=$_DOCKER_REPO_BASE/$_IMAGE_NAME:$_VERSION'
+  #   - '--expose=3000'
+  #   - '--app=$_IMAGE_NAME'
+  #   - '--version=$_VERSION'
+  #   - '--namespace=$_NAMESPACE'
+  #   - '--output=$_OUTPUT_BUCKET'
+  #   - '--annotation=gcb-build-id=$BUILD_ID'
 
-  - id: 'Apply deploy'
-    waitFor:
-      - 'pull'
-      - 'build'
-      - 'publish'
-      - 'create-attestation'
-      - 'Prepare deploy'
-    name: 'gcr.io/cloud-builders/gke-deploy'
-    args:
-    - 'apply'
-    - '--filename=$_OUTPUT_BUCKET/expanded/*'
-    - '--namespace=$_NAMESPACE'
-    - '--cluster=$_CLUSTER_NAME'
-    - '--location=$_LOCATION'
+  # - id: 'Apply deploy'
+  #   waitFor:
+  #     - 'pull'
+  #     - 'build'
+  #     - 'publish'
+  #     - 'create-attestation'
+  #     - 'Prepare deploy'
+  #   name: 'gcr.io/cloud-builders/gke-deploy'
+  #   args:
+  #   - 'apply'
+  #   - '--filename=$_OUTPUT_BUCKET/expanded/*'
+  #   - '--namespace=$_NAMESPACE'
+  #   - '--cluster=$_CLUSTER_NAME'
+  #   - '--location=$_LOCATION'
 
 #tags: ['cloud-builders-Amitabh']
 
